@@ -37,10 +37,11 @@ export const axiosRequest = async ({
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       console.error("Error:", error.response?.data);
+      throw error.response?.data.message
     } else if (error instanceof Error) {
       console.error("Error:", error.message);
     } else {
-      console.error("An unexpected error occurred", error);
+      console.error("An unexpected error occurred");
     }
     throw error;
   }
