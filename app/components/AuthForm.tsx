@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import EyeSvgComponent from "./EyeSvgComponent";
 import { axiosRequest } from "../services/axiosRequest";
 
@@ -21,6 +21,7 @@ export default function AuthForm(props: { authType: "login" | "register" }) {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
+  const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const inputSpanStyles = "font-semibold text-sm mt-3 dark:text-white";
   const inputStyles =
@@ -40,117 +41,114 @@ export default function AuthForm(props: { authType: "login" | "register" }) {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
   const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
   const handleOnSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try {
-      const requestEndpoint = props.authType === 'login' ? 'auth/login' : 'auth/register';
-      const requestData = props.authType === 'login' ? {email: input.email, password: input.password} : {name: input.name, email: input.email, password: input.password}
 
-      const responseData = await axiosRequest({endpoint: requestEndpoint, method: 'POST', data: requestData })
+    if (
+      props.authType === "register" &&
+      input.password !== input.confirmPassword
+    ) {
+      setErrorMessages(["Las contraseñas no coinciden."]);
+      return;
+    }
+
+    try {
+      const requestEndpoint =
+        props.authType === "login" ? "auth/login" : "auth/register";
+      const requestData =
+        props.authType === "login"
+          ? { email: input.email, password: input.password }
+          : { name: input.name, email: input.email, password: input.password };
+
+      const responseData = await axiosRequest({
+        endpoint: requestEndpoint,
+        method: "POST",
+        data: requestData,
+      });
       console.log(`Response ${props.authType}: `, responseData);
-      
+
+      setErrorMessages([]);
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("Error:", error.response?.data);
-      } else if (error instanceof Error) {
-        console.error("Error:", error.message);
+      if (typeof error === "string") {
+        setErrorMessages([error]);
+      } else if (Array.isArray(error)) {
+        setErrorMessages(error);
       } else {
-        console.error("An unexpected error occurred");
+        setErrorMessages(["An unexpected error occurred"]);
       }
     }
   };
 
-  if (props.authType === "login") {
-    return (
-      <form onSubmit={handleOnSubmit} className="flex flex-col mt-2">
-        <label className="flex flex-col">
-          <span className={inputSpanStyles}>Correo electrónico</span>
-          <input
-            className={inputStyles}
-            type="text"
-            name="email"
-            id="email_input"
-            onChange={handleOnChange}
-            value={input.email}
-            placeholder="m@ejemplo.com"
-          />
-        </label>
-        <label className="flex flex-col">
-          <span className={inputSpanStyles}>Contraseña</span>
-          <div className="relative">
+  useEffect(() => {
+    setInput(initialInputState);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setErrorMessages([]);
+  }, [props.authType]);
+
+  return (
+    <form
+      onSubmit={handleOnSubmit}
+      className="flex flex-col mt-2"
+      autoComplete="off"
+    >
+      {props.authType === "register" && (
+        <>
+          <label className="flex flex-col">
+            <span className={inputSpanStyles}>Nombre</span>
             <input
               className={inputStyles}
-              type={showPassword ? "text" : "password"}
-              name="password"
-              id="password_input"
+              type="text"
+              name="name"
+              id="name_input"
               onChange={handleOnChange}
-              value={input.password}
+              value={input.name}
+              placeholder="Tu Nombre"
+              autoComplete="new-password"
             />
-            <button
-              className={visibilityButton}
-              type="button"
-              onClick={togglePasswordVisibility}
-            >
-              <EyeSvgComponent visibility={showPassword} />
-            </button>
-          </div>
-        </label>
-        <button type="submit" className={buttonStyles}>
-          Iniciar Sesión
-        </button>
-      </form>
-    );
-  } else {
-    return (
-      <form onSubmit={handleOnSubmit} className="flex flex-col mt-2">
-        <label className="flex flex-col">
-          <span className={inputSpanStyles}>Nombre</span>
+          </label>
+        </>
+      )}
+      <label className="flex flex-col">
+        <span className={inputSpanStyles}>Correo electrónico</span>
+        <input
+          className={inputStyles}
+          type="text"
+          name="email"
+          id="email_input"
+          onChange={handleOnChange}
+          value={input.email}
+          placeholder="m@ejemplo.com"
+          autoComplete="new-password"
+        />
+      </label>
+      <label className="flex flex-col">
+        <span className={inputSpanStyles}>Contraseña</span>
+        <div className="relative">
           <input
             className={inputStyles}
-            type="text"
-            name="name"
-            id="name_input"
+            type={showPassword ? "text" : "password"}
+            name="password"
+            id="password_input"
             onChange={handleOnChange}
-            value={input.name}
-            placeholder="Tu Nombre"
+            value={input.password}
+            autoComplete="new-password"
           />
-        </label>
-        <label className="flex flex-col">
-          <span className={inputSpanStyles}>Correo electrónico</span>
-          <input
-            className={inputStyles}
-            type="text"
-            name="email"
-            id="email_input"
-            onChange={handleOnChange}
-            value={input.email}
-            placeholder="m@ejemplo.com"
-          />
-        </label>
-        <label className="flex flex-col">
-          <span className={inputSpanStyles}>Contraseña</span>
-          <div className="relative">
-            <input
-              className={inputStyles}
-              type={showPassword ? "text" : "password"}
-              name="password"
-              id="password_input"
-              onChange={handleOnChange}
-              value={input.password}
-            />
-            <button
-              className={visibilityButton}
-              type="button"
-              onClick={togglePasswordVisibility}
-            >
-              <EyeSvgComponent visibility={showPassword} />
-            </button>
-          </div>
-        </label>
+          <button
+            className={visibilityButton}
+            type="button"
+            onClick={togglePasswordVisibility}
+          >
+            <EyeSvgComponent visibility={showPassword} />
+          </button>
+        </div>
+      </label>
+      {props.authType === "register" && (
         <label className="flex flex-col">
           <span className={inputSpanStyles}>Confirmar Contraseña</span>
           <div className="relative">
@@ -161,6 +159,7 @@ export default function AuthForm(props: { authType: "login" | "register" }) {
               id="confirm_password_input"
               onChange={handleOnChange}
               value={input.confirmPassword}
+              autoComplete="new-password"
             />
             <button
               className={visibilityButton}
@@ -171,10 +170,19 @@ export default function AuthForm(props: { authType: "login" | "register" }) {
             </button>
           </div>
         </label>
-        <button type="submit" className={buttonStyles}>
-          Registrarse
-        </button>
-      </form>
-    );
-  }
+      )}
+      {errorMessages.length > 0 && (
+        <div className="mt-3">
+          {errorMessages.map((message, index) => (
+            <p key={index} className="text-red-500 text-sm">
+              {message}
+            </p>
+          ))}
+        </div>
+      )}
+      <button type="submit" className={buttonStyles}>
+        {props.authType === "login" ? "Iniciar Sesión" : "Registrarse"}
+      </button>
+    </form>
+  );
 }
