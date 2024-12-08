@@ -1,7 +1,7 @@
 import axios from "axios";
-import Image from "next/image";
 import React, { useState } from "react";
 import EyeSvgComponent from "./EyeSvgComponent";
+import { axiosRequest } from "../services/axiosRequest";
 
 export default function AuthForm(props: { authType: "login" | "register" }) {
   interface InputState {
@@ -47,25 +47,12 @@ export default function AuthForm(props: { authType: "login" | "register" }) {
   const handleOnSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      if (props.authType == "login") {
-        const response = await axios.post("http://localhost:3001/auth/login", {
-          email: input.email,
-          password: input.password,
-        });
+      const requestEndpoint = props.authType === 'login' ? 'auth/login' : 'auth/register';
+      const requestData = props.authType === 'login' ? {email: input.email, password: input.password} : {name: input.name, email: input.email, password: input.password}
 
-        console.log("Response Login: ", response.data);
-      } else {
-        const response = await axios.post(
-          "http://localhost:3001/auth/register",
-          {
-            name: input.name,
-            email: input.email,
-            password: input.password,
-          }
-        );
-
-        console.log("Response Register: ", response.data);
-      }
+      const responseData = await axiosRequest({endpoint: requestEndpoint, method: 'POST', data: requestData })
+      console.log(`Response ${props.authType}: `, responseData);
+      
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         console.error("Error:", error.response?.data);
